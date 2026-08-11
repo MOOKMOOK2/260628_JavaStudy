@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <title>회원가입</title>
+    <style>
+        .submit-btn {
+            width: 20%;
+            padding: 12px 0;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 700;
+            color: white;
+            background-color: #c7cdd6;
+            cursor: not-allowed;
+            transition: background-color 0.2s ease;
+        }
+
+        .submit-btn.active {
+            background-color: #b8dcff;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <h1>회원가입</h1>
+
+        <form th:object="${request}" th:action="@{/auth/signup}" method="post" id="signupForm">
+            <div>
+                <label for="email">이메일</label>
+                <input type="email" th:field="*{email}" placeholder="이메일을 입력해줘" required />
+                <p th:if="${#fields.hasErrors('email')}" th:errors="*{email}" style="color:red;"></p>
+            </div>
+
+            <div>
+                <label for="password">비밀번호</label>
+                <input type="password" th:field="*{password}" placeholder="비밀번호를 입력해줘" required minlength="8" />
+                <p th:if="${#fields.hasErrors('password')}" th:errors="*{password}" style="color:red;"></p>
+            </div>
+
+            <div>
+                <label for="nickname">닉네임</label>
+                <input type="text" th:field="*{nickname}" placeholder="닉네임을 입력해줘" required />
+                <p th:if="${#fields.hasErrors('nickname')}" th:errors="*{nickname}" style="color:red;"></p>
+            </div>
+
+            <p th:if="${errorMessage}" th:text="${errorMessage}" style="color:red;"></p>
+
+            <button type="submit" class="submit-btn" id="signupBtn" disabled>회원가입</button>
+        </form>
+
+        <p>
+            <a th:href="@{/auth}">로그인 하러 가기</a>
+        </p>
+
+    </main>
+
+    <script>
+        const signupForm = document.getElementById("signupForm");
+        const signupBtn = document.getElementById("signupBtn");
+        const requiredInputs = signupForm.querySelectorAll("input[required]");
+
+        function updateSignupButton() {
+            const allFilled = Array.from(requiredInputs).every(input => input.value.trim() !== "");
+
+            if (allFilled) {
+                signupBtn.disabled = false;
+                signupBtn.classList.add("active");
+            } else {
+                signupBtn.disabled = true;
+                signupBtn.classList.remove("active");
+            }
+        }
+
+        requiredInputs.forEach(input => {
+            input.addEventListener("input", updateSignupButton);
+        });
+
+        updateSignupButton();
+    </script>
+</body>
+</html>
