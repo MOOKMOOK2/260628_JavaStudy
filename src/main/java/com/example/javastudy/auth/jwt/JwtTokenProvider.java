@@ -96,7 +96,7 @@ public class JwtTokenProvider {
 
     public boolean isValid(String token) {
         try {
-            getClaims(token);
+            getClaims(token); //payload를 읽어옴
             return true;
         } catch(JwtException | IllegalArgumentException e) {
             return false;

@@ -9,6 +9,8 @@ import com.example.javastudy.global.config.JwtProperties;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +18,9 @@ import lombok.RequiredArgsConstructor;
 import java.time.Duration;
 
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
@@ -115,5 +119,29 @@ public class AuthController {
             model.addAttribute("errorMessage", err.getMessage());
             return "auth/login"; //login.html을 의미함
         }
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<String> validateRefreshToken(HttpServletRequest request) {
+        //ResponseEntity<String> : HTTP전체 응답 + body 는 String
+        String refreshToken = getRefreshTokenFromCookie(request);
+        try {
+            authService.validateRefreshToken(refreshToken);
+            return ResponseEntity.ok("Refresh token vaild");
+        } catch(IllegalArgumentException e) { //정상 처리가 불가능할 때
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
+        }
+    }
+
+    private String getRefreshTokenFromCookie(HttpServletRequest request) {
+        Cookie[] cookies = request.getCookies();
+        if(cookies != null) {
+            for(Cookie cookie : cookies) {
+                if("refreshToken".equals(cookie.getName())) {
+                    return cookie.getValue();
+                }
+            }
+        }
+        return null;
     }
 }

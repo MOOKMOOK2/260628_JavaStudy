@@ -383,17 +383,18 @@ jjwt-jackson = JSON 통역사 📦 JSON 처리
    - 스프링 시큐리티 규칙으로 공개 API와 보호 API를 나눔 -> 여기서 API == 라우팅 주소 및 해당 화면 기능들
    - SecurityConfig의 .authorizeHttpRequests 참고
 
+22-10 Refresh Token 검증 API 구현 -> 22-10에서 access token을 재발급 하기 위한..
+   - JWT 필터는 매 요청마다 access token이 있는지, 유효한지 검사
+     refresh token 검증 API는 refresh token이 DB와 일치 하는지 만료된건 아닌지 확인
+   - JWT필터에서 토큰 만료시 401 err -> 자바스크립트에서 fetch 401일때 /refresh api호출 -> 재발급
+   - String refreshToken: 클라이언트 쿠키에서 가져온 JWT 문자열 -> 진짜 문자열임 확인만 하는정도?
+     RefreshToken savedRefreshToken: DB에서 조회한 RefreshToken 엔티티 객체 -> 엔티티에 있는 값이 들어감
 
 
-
-
-todo: 
+todo: 22-10 개발일지 정리하기
 
 check: JWT 진행 상태 재정리 (2026-07-31)
    - 현재 확정된 순서
-     0. Access Token 브라우저 전달 -> O
-     1. JWT 인증 필터 작성
-     2. SecurityConfig에 JWT 필터 연결
      3. Refresh Token 검증 API 구현
      4. Access Token 재발급 구현
      5. 로그아웃 구현
@@ -407,6 +408,9 @@ check: JWT 진행 상태 재정리 (2026-07-31)
      - RefreshToken Entity / Repository 생성
      - Refresh Token DB 저장
      - Refresh Token HttpOnly Cookie 저장
+     0. Access Token 브라우저 전달 -> O
+     1. JWT 인증 필터 작성
+     2. SecurityConfig에 JWT 필터 연결
    - 현재 남은 것
      - Access Token 브라우저 전달 방식 최종 정리
      - JWT 필터 작성

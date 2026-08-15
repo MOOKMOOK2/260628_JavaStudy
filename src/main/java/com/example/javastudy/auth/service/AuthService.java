@@ -9,11 +9,16 @@ import com.example.javastudy.auth.repository.RefreshTokenRepository;
 import com.example.javastudy.global.config.JwtProperties;
 import com.example.javastudy.user.entity.User;
 import com.example.javastudy.user.repository.UserRepository;
+
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 
+import java.net.http.HttpRequest;
 import java.time.Duration;
 import java.time.LocalDateTime;
 
+import org.springframework.boot.autoconfigure.data.redis.RedisProperties.Lettuce.Cluster.Refresh;
+import org.springframework.http.HttpEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -66,5 +71,24 @@ public class AuthService {
         );
 
         return new LoginResponse(accessToken, refreshToken);
+    }
+
+    public void validateRefreshToken(String refreshToken) {
+        if(refreshToken==null || refreshToken.isBlank()) {
+            throw new IllegalArgumentException("리프레시 토큰이 없습니다."); //컨트롤러 예외로 감
+        }
+        if(!jwtTokenProvider.isValid(refreshToken)) {
+            throw new IllegalArgumentException("리프레시 토큰이 유효하지 않습니다.");
+        } 
+        if(!"refresh".equals(jwtTokenProvider.getTokenType(refreshToken))) {
+            throw new IllegalArgumentException("리프레시 토큰이 아닙니다.");
+        }
+        RefreshToken/* Entity */ savedRefreshToken = refreshTokenRepository.findByToken(refreshToken)
+            .orElseThrow/* optional이 없는경우 */(() -> new IllegalArgumentException("DB에 리프레시 토큰이 존재하지 않습니다."));
+        if(savedRefreshToken.getExpiresAt().isBefore(LocalDateTime.now())) {
+            //엔티티(DB)의 리프레시토큰의 만료시각과 현재시각 비교
+            throw new IllegalArgumentException("리프레시 토큰이 만료되었습니다.");
+        }
+
     }
 }
