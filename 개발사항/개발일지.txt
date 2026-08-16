@@ -412,8 +412,17 @@ jjwt-jackson = JSON 통역사 📦 JSON 처리
 22-11 Access token 재발급 구현
    - 검증은 22-10에서 끝났고, provider의 createAccessToken으로 생성하는게 목표
    - Service에서 Refresh token의 userId로 User entity DB조회해서 createAccessToken의 인자를 가져오자
+   - Service에서는 refreshAccessToken함수를 만들어서 컨트롤러가 보낸 리프레시토큰으로 entity값들을 토큰 생성기의 인자로 넣어줌
+   - Controller는 함수명을 refreshAccessToken으로 바꿈, Service에서 가져온 accessToken을 http 쿠키로 응답
+   - Cookie : 요청 쿠키를 읽을 떄 쓰는 서블릿(원시적인) 쿠키 객체
+     ResponseCookie : 응답으로 보낼 쿠키를 Spring에서 편하게 생성하기 위한 객체 
 
-todo: 
+22-12 로그아웃 구현
+
+
+
+
+todo: 22-12 로그아웃 ㄱㄱㄱ
 
 check: JWT 진행 상태 재정리 (2026-07-31)
    - 현재 확정된 순서

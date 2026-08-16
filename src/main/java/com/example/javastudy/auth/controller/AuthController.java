@@ -122,12 +122,22 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<String> validateRefreshToken(HttpServletRequest request) {
+    public ResponseEntity<String> refreshAccessToken(HttpServletRequest request, HttpServletResponse response) {
         //ResponseEntity<String> : HTTP전체 응답 + body 는 String
         String refreshToken = getRefreshTokenFromCookie(request);
         try {
             authService.validateRefreshToken(refreshToken);
-            return ResponseEntity.ok("Refresh token vaild");
+            String accessToken = authService.refreshAccessToken(refreshToken);
+            ResponseCookie accessCookie = ResponseCookie
+                .from("accessToken", accessToken)
+                .httpOnly(true)
+                .secure(false)
+                .path("/")
+                .maxAge(Duration.ofMillis(jwtProperties.getAccessTokenExpiration()))
+                .sameSite("Lax")
+                .build();
+            response.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());
+            return ResponseEntity.ok("Access token refreshed");
         } catch(IllegalArgumentException e) { //정상 처리가 불가능할 때
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
         }

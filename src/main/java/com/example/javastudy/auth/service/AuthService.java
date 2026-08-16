@@ -25,6 +25,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class AuthService {
+    //대상이 누구든지 안바뀌고 사용하는 공통 도구
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
@@ -90,5 +91,20 @@ public class AuthService {
             throw new IllegalArgumentException("리프레시 토큰이 만료되었습니다.");
         }
 
+    }
+
+    public String refreshAccessToken(String refreshToken) {
+        //userId를 엔티티가 아니라 refreshToken으로 가져오는게 핵심
+        Long userId = jwtTokenProvider.getUserId((refreshToken));
+        if(userId == null) {
+            throw new IllegalArgumentException("사용자 ID가 존재하지 않습니다.");
+        }
+        User user = userRepository.findById(userId).orElseThrow(()
+            -> new IllegalArgumentException("사용자 정보가 유효하지 않습니다."));
+        String userEmail = user.getEmail();
+        String userRole = user.getRole();
+        
+        String newAccessToken = jwtTokenProvider.createAccessToken(userId, userEmail, userRole);
+        return newAccessToken;
     }
 }
