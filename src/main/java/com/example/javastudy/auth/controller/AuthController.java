@@ -5,6 +5,9 @@ import com.example.javastudy.auth.dto.LoginResponse;
 import com.example.javastudy.auth.dto.SignupRequest;
 import com.example.javastudy.auth.service.AuthService;
 import com.example.javastudy.global.config.JwtProperties;
+import com.example.javastudy.global.exception.DuplicateEmailException;
+import com.example.javastudy.global.exception.InvalidRefreshTokenException;
+import com.example.javastudy.global.exception.LoginFailedException;
 
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -18,51 +21,18 @@ import lombok.RequiredArgsConstructor;
 import java.time.Duration;
 
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
-/*
- * AuthController
- *
- * 회원가입/로그인 form 요청을 받는 HTTP 입구다.
- *
- * Controller는 얇게 유지한다.
- * 실제 로직은 AuthService에 맡기고,
- * 여기서는 form 데이터를 받아 서비스로 넘기고
- * 처리 결과에 따라 redirect 한다.
- */
 @Controller
 @RequestMapping("/auth")
 @RequiredArgsConstructor
 public class AuthController {
-
-    /*
-     * AuthService
-     *
-     * 회원가입/로그인 비즈니스 로직을 처리하는 서비스다.
-     * 생성자 주입으로 연결된다.
-     * Spring이 자동으로 주입해준다.
-     */
     private final AuthService authService;
     private final JwtProperties jwtProperties;
-    /*
-     * 회원가입 form 처리
-     *
-     * POST /auth/signup
-     *
-     * @Valid
-     * - form 값 검증 수행
-     *
-     * @RequestBody
-     * - 현재는 사용하지 않는다
-     *
-     * @ModelAttribute
-     * - HTML form의 입력값을 DTO에 바인딩한다
-     */
-
+    
     @PostMapping("/signup")
     public String signup(@Valid @ModelAttribute SignupRequest request, //dto
         BindingResult bindingResult, Model model) {
@@ -72,20 +42,12 @@ public class AuthController {
         try {
             authService.signup(request);
             return "redirect:/auth";
-        } catch(IllegalArgumentException  e) {
+        } catch(DuplicateEmailException  e) {
             model.addAttribute("errorMessage", "회원가입에 실패했습니다.");
             return "auth/signup";
         }
     }
 
-    /*
-     * 로그인 form 처리
-     *
-     * POST /auth
-     *
-     * form 값 검증 후 로그인 처리만 하고
-     * 성공 시 메인 페이지로 redirect 한다.
-     */
     @PostMapping
     public String login(@Valid @ModelAttribute LoginRequest request, BindingResult bindingResult, Model model, HttpServletResponse response) {
         //@ModelAttribute는 HTML form으로 들어온 값을 LoginRequest 객체에 넣어줌 -> Valid는 그것들에 대한 검증
@@ -115,7 +77,7 @@ public class AuthController {
                 .build();//지금까지 설정한 걸 실제 쿠키 객체로 완성
             response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
             return "redirect:/";
-        } catch(IllegalArgumentException err) {
+        } catch(LoginFailedException err) {
             model.addAttribute("errorMessage", err.getMessage());
             return "auth/login"; //login.html을 의미함
         }
@@ -125,22 +87,47 @@ public class AuthController {
     public ResponseEntity<String> refreshAccessToken(HttpServletRequest request, HttpServletResponse response) {
         //ResponseEntity<String> : HTTP전체 응답 + body 는 String
         String refreshToken = getRefreshTokenFromCookie(request);
-        try {
-            authService.validateRefreshToken(refreshToken);
-            String accessToken = authService.refreshAccessToken(refreshToken);
-            ResponseCookie accessCookie = ResponseCookie
-                .from("accessToken", accessToken)
-                .httpOnly(true)
-                .secure(false)
-                .path("/")
-                .maxAge(Duration.ofMillis(jwtProperties.getAccessTokenExpiration()))
-                .sameSite("Lax")
-                .build();
-            response.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());
-            return ResponseEntity.ok("Access token refreshed");
-        } catch(IllegalArgumentException e) { //정상 처리가 불가능할 때
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
-        }
+        authService.validateRefreshToken(refreshToken);
+        String accessToken = authService.refreshAccessToken(refreshToken);
+
+        ResponseCookie accessCookie = ResponseCookie
+            .from("accessToken", accessToken)
+            .httpOnly(true)
+            .secure(false)
+            .path("/")
+            .maxAge(Duration.ofMillis(jwtProperties.getAccessTokenExpiration()))
+            .sameSite("Lax")
+            .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());
+        
+        return ResponseEntity.ok("Access token refreshed");
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<String> logout(HttpServletRequest request, HttpServletResponse response) {
+        String refreshToken = getRefreshTokenFromCookie(request);
+        authService.logout(refreshToken);
+
+        ResponseCookie deleteAccessCookie = ResponseCookie.from("accessToken", "")
+            .path("/")
+            .maxAge(0)
+            .httpOnly(true)
+            .secure(false)
+            .sameSite("Lax")
+            .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, deleteAccessCookie.toString());
+
+        ResponseCookie deleteRefreshCookie = ResponseCookie.from("refreshToken", "")
+            .path("/")
+            .maxAge(0)
+            .httpOnly(true)
+            .secure(false)
+            .sameSite("Lax")
+            .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, deleteRefreshCookie.toString());
+            
+        return ResponseEntity.ok("logout success");
+
     }
 
     private String getRefreshTokenFromCookie(HttpServletRequest request) {

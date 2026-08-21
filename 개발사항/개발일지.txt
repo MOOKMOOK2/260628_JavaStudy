@@ -418,34 +418,231 @@ jjwt-jackson = JSON 통역사 📦 JSON 처리
      ResponseCookie : 응답으로 보낼 쿠키를 Spring에서 편하게 생성하기 위한 객체 
 
 22-12 로그아웃 구현
+   - 클라이언트가 auth/logout 요청 -> 쿠키에서 refreshToken 확인 -> DB에서 그 토큰 삭제
+     -> 브라우저 access, refresh cookie 삭제 지시(덮어쓰기) -> 로그아웃 완료 응답 반환
+   - 지금은 그럴싸한 프론트가 없기 때문에 컨트롤러가 라우팅 요청 받았을때부터 시작
+   - 뼈대 맞추기: 컨트롤러에서 refreshToken 서비스로 보내고 서비스는 받아서 DB 삭제함(Entity로 안하고 Repository로 삭제했음)
+   - HTTP쿠키 삭제하기:
+      1. ResponseCookie 클래스는 static이므로 클래스명으로 안에있는 함수들 사용
+      2. ResponseCookie로 보낼 쿠키를 만들어서 HttpServletResponse로 실제 HTTP 응답(쿠키포함)을 보냄 
+      3. 서버가 HTTP쿠키를 삭제(지시)하는 방법: 직접 삭제하는것이 아닌 값을 재설정 하면서 만료시켜서 삭제되도록 함
+         .from("accessToken", "보통 빈 문자열").maxAge(0)
+      4. .maxAge만 0으로 하고 나머지는 쿠키 만들때 참고(.addHeader 포함)
+
+22-13 토큰 만료 및 예외 처리 추가
+   - 지금까지는 서비스에서 IllegalArgumentException 던지면 컨트롤러가 받아다가 
+     그때그때 ResponseEntity.status()로 직접 응답함
+   - CustomExeption.class(예외), GlobalExceptionHandler.class(전역 예외 처리기) 구현 필요
+   - 컨트롤러나 서비스에서 throw new CustomException(다양한 상황별 예외 클래스가 존재) 
+     -> GlobalExceptionHandler가 받아서 @ExceptionHandler(예외클래스 이름)에 따라 예외 처리가 됨
+   - React : 백엔드가 401 + 에러메시지 응답 -> React가 응답 확인 -> 화면에 에러메시지 출력
+     Thymeleaf : Controller에서 에러 발생 -> model.addAttribute()로 메시지 전달
+     -> HTML 다시 렌더링 -> 타임리프가 에러메시지 출력 
+   - 만들어놓은 예외클래스들이랑 해당하는 상태코드
+     DuplicateEmailException -> 409 Conflict
+     LoginFailedException -> 401 Unauthorized
+     InvalidRefreshTokenException -> 401 Unauthorized
+     UserNotFoundException -> 404 Not Found 
+   - 전역변수처리기 응답 부분 상태코드            : 상태코드 : 의미
+     HttpStatus.CONFLICT                 : 409    : 충돌, 보통 중복 데이터
+     HttpStatus.UNAUTHORIZED             : 401    : 인증 실패, 토큰 없음/만료/잘못됨
+     HttpStatus.FORBIDDEN                : 403    : 인증은 됐지만 권한 없음
+     HttpStatus.NOT_FOUND                : 404    : 대상 없음
+     HttpStatus.BAD_REQUEST              : 400    : 요청 자체가 잘못됨
+     HttpStatus.OK                       : 200    : 성공
+     HttpStatus.CREATED                  : 201    : 생성 성공
+     HttpStatus.NO_CONTENT               : 204    : 성공했지만 내려줄 내용 없음 
+   - model.addAttribute 하는 경우: 컨트롤러가 잡으면 전역변수처리기로 안잡음
+
+23. 도메인 중간 점검 - 4가지 도메인
+ - 사용자 A가 스터디 B를 생성 -> Study
+ - 사용자 C가 스터디 B에 지원 -> Application
+ - 사용자 C의 이메일과 비밀번호 관리 -> User
+ - 사용자 C의 로그인과 토큰 발급 -> Auth
+
+24. Study 도메인으로 넘어가서
+
+
+todo: 
 
 
 
+[Study 도메인 개발순서]
+👑✨ `Study` 도메인은 아래 순서로 진행하면 돼 ⭕🐯
 
-todo: 22-12 로그아웃 ㄱㄱㄱ
+0️⃣ 스터디 기능 범위 정하기  
+- 스터디 생성
+- 스터디 목록 조회
+- 스터디 상세 조회
+- 스터디 수정
+- 스터디 삭제
+- 작성자만 수정·삭제 가능
 
-check: JWT 진행 상태 재정리 (2026-07-31)
-   - 현재 확정된 순서
-     3. Refresh Token 검증 API 구현
-     4. Access Token 재발급 구현
-     5. 로그아웃 구현
-     6. 토큰 예외 처리 정리
-   - 현재까지 완료
-     - build.gradle JWT 라이브러리 추가
-     - JwtProperties 및 설정값 준비
-     - JwtTokenProvider 생성
-     - 로그인 성공 시 Access Token 발급
-     - Refresh Token 전략 결정
-     - RefreshToken Entity / Repository 생성
-     - Refresh Token DB 저장
-     - Refresh Token HttpOnly Cookie 저장
-     0. Access Token 브라우저 전달 -> O
-     1. JWT 인증 필터 작성
-     2. SecurityConfig에 JWT 필터 연결
-   - 현재 남은 것
-     - Access Token 브라우저 전달 방식 최종 정리
-     - JWT 필터 작성
-     - SecurityConfig 연결
-     - Refresh Token 검증 후 Access Token 재발급 API 구현
-     - 로그아웃 구현
-     - 예외 처리 정리
+1️⃣ `Study` 엔티티 만들기  
+경로: `study/entity/Study.java`
+
+- 제목
+- 내용
+- 모집 인원
+- 지역
+- 온라인/오프라인
+- 모집 상태
+- 작성자
+- 생성일
+- 수정일
+
+2️⃣ 스터디 상태와 진행 방식 정하기  
+예를 들면:
+
+- 모집 상태: `RECRUITING`, `CLOSED`
+- 진행 방식: `ONLINE`, `OFFLINE`
+
+문자열보다 `enum`으로 관리하는 게 안전해 🐱
+
+3️⃣ `StudyRepository` 만들기  
+경로: `study/repository/StudyRepository.java`
+
+기본 기능:
+
+- 저장
+- 전체 조회
+- 단건 조회
+- 삭제
+- 작성자 기준 조회
+
+4️⃣ 요청 DTO 만들기  
+경로: `study/dto`
+
+- `StudyCreateRequest`: 생성 요청
+- `StudyUpdateRequest`: 수정 요청
+
+Entity를 직접 요청받지 않고 DTO로 받는 구조야 🐶
+
+5️⃣ 응답 DTO 만들기  
+경로: `study/dto/StudyResponse.java`
+
+화면이나 프론트에 보여줄 값만 담아.
+
+- 스터디 ID
+- 제목
+- 내용
+- 모집 인원
+- 지역
+- 진행 방식
+- 모집 상태
+- 작성자 정보
+- 생성일
+- 수정일
+
+6️⃣ `StudyService` 만들기  
+경로: `study/service/StudyService.java`
+
+비즈니스 로직을 담당해.
+
+- 스터디 생성
+- 스터디 목록 조회
+- 스터디 상세 조회
+- 스터디 수정
+- 스터디 삭제
+- 작성자 확인
+- 존재하지 않는 스터디 예외 처리
+
+7️⃣ 스터디 생성 구현  
+흐름:
+
+`Controller`가 요청 DTO 수신  
+👉 `Service`가 로그인 사용자 확인  
+👉 `Study` Entity 생성  
+👉 `Repository.save()`로 DB 저장  
+👉 응답 DTO 반환 🦊
+
+8️⃣ 스터디 조회 구현  
+
+- 전체 목록: `GET /studies`
+- 상세 조회: `GET /studies/{id}`
+
+조회는 로그인하지 않은 사용자도 볼 수 있도록 설정할 수 있어 🐮
+
+9️⃣ 스터디 수정 구현  
+
+- `PATCH /studies/{id}`
+- 해당 스터디가 존재하는지 확인
+- 현재 로그인 사용자가 작성자인지 확인
+- 수정 가능한 값만 변경
+- 저장 후 응답
+
+작성자가 아니면 `403 Forbidden`으로 처리해 🐯
+
+🔟 스터디 삭제 구현  
+
+- `DELETE /studies/{id}`
+- 스터디 존재 여부 확인
+- 작성자 여부 확인
+- 삭제 처리
+
+작성자가 아니면 삭제할 수 없어 🐻
+
+1️⃣1️⃣ `StudyController` 만들기  
+경로: `study/controller/StudyController.java`
+
+담당 주소:
+
+- `POST /studies`
+- `GET /studies`
+- `GET /studies/{id}`
+- `PATCH /studies/{id}`
+- `DELETE /studies/{id}`
+
+Controller는 요청을 받고 Service를 호출하는 역할만 맡겨 🐰
+
+1️⃣2️⃣ JWT 사용자와 Study 연결하기  
+
+JWT 필터가 인증 정보를 `SecurityContext`에 넣으면, Study 기능에서 현재 로그인 사용자를 확인할 수 있어.
+
+- 생성: 로그인 사용자 필요
+- 수정: 작성자 본인만 가능
+- 삭제: 작성자 본인만 가능
+- 조회: 전체 허용 가능
+
+1️⃣3️⃣ 예외 처리 추가  
+
+필요한 예외:
+
+- `StudyNotFoundException`: 스터디 없음
+- `ForbiddenException`: 작성자가 아님
+- 입력값 검증 실패: DTO의 `@Valid`
+
+1️⃣4️⃣ SecurityConfig 권한 설정  
+
+- `GET /studies`, `GET /studies/{id}`: 공개
+- `POST /studies`: 로그인 필요
+- `PATCH /studies/{id}`: 로그인 필요
+- `DELETE /studies/{id}`: 로그인 필요
+
+1️⃣5️⃣ CRUD 테스트  
+
+최소한 다음을 확인해야 해.
+
+- 로그인 사용자가 스터디 생성 가능
+- 스터디 목록 조회 가능
+- 상세 조회 가능
+- 작성자 수정 가능
+- 다른 사용자는 수정 불가
+- 작성자 삭제 가능
+- 존재하지 않는 스터디 처리
+- 잘못된 입력값 처리
+
+1️⃣6️⃣ 이후 확장 기능  
+
+기본 CRUD가 끝난 다음 추가해.
+
+- 페이지네이션
+- 제목 검색
+- 지역 필터
+- 모집 상태 필터
+- 최신순 정렬
+- 모집 인원 마감 처리
+- `Application` 지원 기능
+
+핵심 순서는 `Entity → Repository → DTO → Service → Controller → JWT 권한 → 예외 처리 → 테스트`야 🧸 🌈
+   
