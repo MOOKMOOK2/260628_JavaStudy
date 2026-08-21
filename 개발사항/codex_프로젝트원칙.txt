@@ -1,0 +1,580 @@
+👑🧸 좋아 👉 이건 **네 프로젝트 고정 원칙 요약본**으로 쓸 수 있게, 최대한 자세히 정리해둘게.  
+이걸 새 채팅 첫 메시지로 붙이면, 내가 맥락 잃을 확률이 많이 줄어들어 🐱
+
+---
+
+# 프로젝트 고정 원칙 요약본
+
+## 1️⃣ 프로젝트 목표
+- 이 프로젝트는 **스터디 매칭 플랫폼**이다.
+- 기능은 크게:
+  - 회원가입
+  - 로그인
+  - JWT 인증
+  - 스터디 생성/조회/수정/삭제
+  - 지원 기능
+  - 추후 검색, 필터, 관리자 기능
+- 처음부터 거대하게 만들지 말고, **핵심 기능부터 하나씩 실무형으로 쌓는다**.
+
+---
+
+## 2️⃣ 현재 기술 방향
+- **Spring Boot + MySQL** 기반으로 간다.
+- 프론트는 나중에 붙일 수 있지만, 지금은 **백엔드 구조를 먼저 제대로 잡는 것**이 우선이다.
+- SSR, EJS, 외부 인증, 이벤트 드리븐 같은 건 나중에 붙일 수 있지만, **기본기보다 앞에 두지 않는다**.
+- Spring 처음 배우는 상태이므로, 처음부터 복잡한 아키텍처를 과하게 넣지 않는다.
+
+---
+
+## 3️⃣ 개발 순서 원칙
+- 기능은 항상 **작은 단위**로 간다.
+- 순서는 대략:
+  1. 프로젝트 실행
+  2. MySQL 연결
+  3. 패키지 구조
+  4. User Entity
+  5. UserRepository
+  6. 회원가입 DTO
+  7. 회원가입 Service
+  8. 회원가입 Controller
+  9. 로그인 DTO
+  10. 로그인 Service
+  11. JWT
+  12. Security
+  13. 내 정보 조회
+  14. Study CRUD
+  15. Application 지원 기능
+  16. 예외 처리
+  17. Validation
+  18. 공통 응답
+  19. 검색/필터
+  20. 테스트
+  21. Docker
+  22. README
+
+- 한 번에 여러 단계를 섞지 않는다.
+- 내가 `n ㄱㄱ` 하기 전에는 다음 단계로 넘어가지 않는다.
+
+---
+
+## 4️⃣ 답변 방식 원칙
+- **한 번에 하나씩** 설명한다.
+- 줄글보다 **목록형**을 선호한다.
+- 설명은 항상:
+  - 이게 뭔지
+  - 왜 필요한지
+  - 어디에 쓰는지
+  - 지금 단계에서 뭘 해야 하는지
+  를 중심으로 한다.
+- **가짜 예시를 섞지 않는다.**
+- **현재 프로젝트 코드 상태와 반드시 맞춰서** 설명한다.
+- 실무에서 어떻게 쓰는지 기준으로 설명한다.
+- 포폴에 바로 써도 어색하지 않게 설명한다.
+
+---
+
+## 5️⃣ 파일/폴더 원칙
+- 내가 직접 파일을 수정하거나 새로 만들지 않는다.
+- 폴더 생성, 파일 생성, 코드 수정은 네가 직접 한다.
+- 나는 **가이드만 제공**한다.
+- 설명할 때는 항상:
+  - 어떤 파일에
+  - 어떤 코드를
+  - 왜 넣는지
+  - 어떻게 연결되는지
+  를 말한다.
+- 파일 위치가 중요하다.
+- 패키지 구조와 파일 경로는 반드시 일치해야 한다.
+
+---
+
+## 6️⃣ 아키텍처 원칙
+### 기본 흐름
+```text
+Client → Controller → Service → Repository → DB → Repository → Service → Controller → Response
+```
+
+### 역할 분리
+- **Controller**
+  - HTTP 요청을 받는다.
+  - DTO를 받아 Service를 호출한다.
+  - 응답만 돌려준다.
+- **Service**
+  - 비즈니스 로직을 처리한다.
+  - 검증, 중복 체크, 암호화, 저장 흐름을 담당한다.
+- **Repository**
+  - DB 저장/조회 전담이다.
+  - `save`, `findById`, `findByEmail`, `existsByEmail` 같은 걸 쓴다.
+- **Entity**
+  - DB 테이블과 연결되는 데이터 구조다.
+- **DTO**
+  - 요청/응답 전용 데이터다.
+
+### 중요한 원칙
+- Controller는 얇게 유지한다.
+- Service에 핵심 로직을 모은다.
+- Repository는 DB 접근만 한다.
+- Entity를 API 응답에 직접 노출하지 않는다.
+- DTO와 Entity는 분리한다.
+
+---
+
+## 7️⃣ Entity 설계 원칙
+- Entity는 DB에 저장될 **도메인 객체**다.
+- Entity는 가능하면 setter를 남발하지 않는다.
+- 상태 변경은:
+  - 생성자
+  - 팩토리 메서드
+  - 도메인 메서드
+  로 제어한다.
+- 이유:
+  - 객체 상태를 통제하기 위해
+  - 실무에서 더 안전하고 유지보수하기 쉽게 만들기 위해
+
+### 현재 User 엔티티 원칙
+- `@Getter`는 사용 가능
+- `@NoArgsConstructor`는 사용 가능
+- setter는 기본적으로 안 쓰는 방향
+- 회원가입 저장은 생성자 방식으로 처리한다
+
+---
+
+## 8️⃣ DTO 원칙
+### Request DTO
+- 사용자가 보내는 값
+- 검증 어노테이션을 붙인다
+- 예:
+  - `@Email`
+  - `@NotBlank`
+  - `@Size`
+
+### Response DTO
+- 서버가 돌려주는 값
+- 비밀번호 같은 민감 정보는 넣지 않는다
+- 보통 getter와 생성자 정도만 있으면 된다
+
+### 중요한 원칙
+- Request와 Response는 분리한다.
+- Entity를 그대로 요청/응답에 쓰지 않는다.
+- DTO는 API 계약의 일부라고 생각한다.
+
+---
+
+## 9️⃣ Repository 원칙
+- Repository는 `interface`로 쓴다.
+- `JpaRepository<Entity, IdType>`를 상속한다.
+- Spring이 구현체를 자동 생성한다.
+- `save()`를 따로 만들 필요가 없다.
+- `findByEmail`, `existsByEmail` 같은 메서드는 이름 규칙으로 자동 구현된다.
+
+### 자주 쓰는 메서드 의미
+- `findBy...`
+  - 조건에 맞는 데이터를 찾는다
+- `existsBy...`
+  - 조건에 맞는 데이터가 존재하는지 확인한다
+- `deleteBy...`
+  - 조건에 맞는 데이터를 지운다
+- `countBy...`
+  - 조건에 맞는 데이터 개수를 센다
+
+### 중요한 원칙
+- Repository는 DB 작업만 한다.
+- Service에서 비즈니스 규칙을 처리하고 Repository를 호출한다.
+
+---
+
+## 🔟 PasswordEncoder 원칙
+- 비밀번호는 **그대로 저장하지 않는다**
+- `PasswordEncoder`로 해싱해서 저장한다
+- 회원가입 시:
+  - `encode()`
+- 로그인 시:
+  - `matches()`
+
+### 핵심
+- `PasswordEncoder`는 비밀번호 저장용 해싱 도구다.
+- 실무에서도 비밀번호는 반드시 해싱한다.
+- 평문 비밀번호 저장은 절대 안 된다.
+
+---
+
+## 1️⃣1️⃣ final + RequiredArgsConstructor 원칙
+- `final`은 의존성을 고정하고 싶을 때 쓴다.
+- `@RequiredArgsConstructor`는 `final` 필드를 생성자 주입하기 위해 쓴다.
+- Spring에서는 이 조합을 서비스에서 자주 쓴다.
+
+### 핵심
+- `final`은 “이 서비스가 이 의존성을 계속 쓴다”는 뜻이다.
+- `@RequiredArgsConstructor`는 그 필드들을 자동으로 주입할 생성자를 만들어준다.
+
+---
+
+## 1️⃣2️⃣ Spring Bean 원칙
+- Spring이 관리하는 객체를 Bean이라고 한다.
+- `@Service`, `@Repository`, `@Controller`, `@Configuration`, `@Bean` 등이 Bean 등록과 관련된다.
+- 네가 직접 `new`로 다 만들지 않고, Spring이 주입해주는 구조를 쓴다.
+
+### 중요한 점
+- Spring은 Nest처럼 `module`에 직접 등록하는 방식이 아니다.
+- 대신 패키지 스캔 + 어노테이션 + Bean 등록으로 자동 연결된다.
+
+---
+
+## 1️⃣3️⃣ 패키지 구조 원칙
+- 메인 루트는 `com.example.study`
+- 기능별로 분리한다:
+  - `auth`
+  - `user`
+  - `studygroup`
+  - `applicationform`
+  - `global`
+
+### 하위 구조 예시
+- `controller`
+- `service`
+- `dto`
+- `entity`
+- `repository`
+- `jwt`
+- `config`
+- `exception`
+- `response`
+
+### 중요한 원칙
+- 패키지명은 소문자
+- 폴더 구조와 `package` 선언이 반드시 일치해야 한다
+- 기능별로 분리해서 커져도 안 꼬이게 만든다
+
+---
+
+## 1️⃣4️⃣ 네이밍 원칙
+### Java 코드
+- 클래스명: 대문자 시작
+  - `UserService`
+  - `SignupRequest`
+  - `UserRepository`
+- 변수명/메서드명: 소문자 시작
+  - `userRepository`
+  - `passwordEncoder`
+  - `findByEmail`
+- 상수: 전부 대문자 + 밑줄
+  - `JWT_SECRET`
+
+### DB
+- 테이블명: 소문자 + 밑줄
+  - `users`
+  - `study_groups`
+- 컬럼명: 소문자 + 밑줄
+  - `created_at`
+  - `user_id`
+
+### URL
+- 소문자 중심
+  - `/auth/signup`
+  - `/users/me`
+
+### 원칙
+- Java는 camelCase
+- DB는 snake_case
+- 한 사람이 둘 다 쓰는 건 정상이다
+- 영역별 규칙만 일관되게 지키면 된다
+
+---
+
+## 1️⃣5️⃣ 로그인/회원가입 원칙
+- 회원가입은:
+  - DTO로 받기
+  - Service에서 검증
+  - 비밀번호 해싱
+  - Entity 생성
+  - Repository 저장
+  - Response DTO 반환
+- 로그인은:
+  - 이메일 조회
+  - 비밀번호 비교
+  - JWT 발급
+  - 응답 반환
+
+### 중요한 원칙
+- 비밀번호는 응답에 절대 다시 넣지 않는다
+- 로그인/회원가입은 나중에 JWT와 연결된다
+- 처음엔 단순하게 구현하고 나중에 보안 레이어를 붙인다
+
+---
+
+## 1️⃣6️⃣ Security 원칙
+- 초반 학습 단계에서는 기본 로그인 창을 끈다
+- `SecurityConfig`에서:
+  - CSRF 끄기
+  - formLogin 끄기
+  - httpBasic 끄기
+  - 모든 요청 허용
+- 이유:
+  - 처음 배우는 단계에서 기본 보안이 방해하지 않게 하기 위해
+
+### 나중에 할 것
+- JWT 도입
+- 인증/인가 분리
+- `/auth/signup`, `/auth/login`만 허용
+- 나머지 요청은 인증 필요하게 변경
+
+---
+
+## 1️⃣7️⃣ JWT 원칙
+- 로그인 성공 후 토큰을 발급한다
+- JWT는 인증 상태를 유지하는 데 쓴다
+- 앞으로는:
+  - 인증 필터
+  - 토큰 검증
+  - 토큰에서 사용자 정보 추출
+  이 필요해진다
+
+### 중요한 원칙
+- JWT는 로그인 성공의 결과물
+- 인증의 핵심은 JWT 발급과 검증
+- JWT는 나중에 `SecurityFilterChain`과 연결한다
+
+---
+
+## 1️⃣8️⃣ 검증 원칙
+- 사용자 입력은 무조건 검증한다
+- 검증은 주로 Request DTO에서 한다
+- `@Valid`와 `jakarta.validation` 어노테이션을 사용한다
+
+### 대표 검증
+- `@NotBlank`
+- `@Email`
+- `@Size`
+
+### 원칙
+- 잘못된 입력은 Service까지 내려보내지 않는다
+- 요청단에서 먼저 차단한다
+
+---
+
+## 1️⃣9️⃣ 예외 처리 원칙
+- 처음부터 완벽한 예외 구조를 크게 만들지 않는다
+- 기능이 어느 정도 생기면 정리한다
+- 기본적으로는:
+  - `IllegalArgumentException`
+  - 이후 `CustomException`
+  - `GlobalExceptionHandler`
+  순서로 발전시킬 수 있다
+
+### 원칙
+- 초반엔 단순하게
+- 나중에 구조적으로 정리
+- 에러 메시지는 명확하게
+
+---
+
+## 2️⃣0️⃣ 응답 포맷 원칙
+- 성공/실패 응답은 가능한 한 통일한다
+- 처음엔 너무 복잡하게 만들지 않는다
+- 나중에 공통 응답 형식을 만들 수 있다
+
+예:
+```json
+{
+  "success": true,
+  "message": "회원가입 완료",
+  "data": { ... }
+}
+```
+
+### 원칙
+- 비밀번호는 응답에 넣지 않는다
+- 응답 구조는 프론트가 예측하기 쉽게 맞춘다
+
+---
+
+## 2️⃣1️⃣ 테스트 원칙
+- 기능이 생기면 테스트도 생각한다
+- 너무 늦게 몰아서 하지 않는다
+- 핵심 기능별로 점검한다:
+  - 회원가입
+  - 로그인
+  - CRUD
+  - 지원 기능
+
+---
+
+## 2️⃣2️⃣ 배포 원칙
+- `application.properties`는 연결 설정 중심
+- 나중에는 `.env` 같은 환경변수 분리를 고려한다
+- 배포는 Docker, Docker Compose, README 정리까지 가는 걸 목표로 한다
+
+---
+
+## 2️⃣3️⃣ 현재 공부 방식 원칙
+- 네가 번호를 주면 그 단계만 설명한다
+- 다음 단계로 임의로 넘어가지 않는다
+- 파일을 직접 수정하지 않는다
+- 네가 직접 만들고, 나는 확인과 설명만 한다
+- 설명은 실무형 아키텍처 기준으로 한다
+- 포폴로 써도 어색하지 않은 방식으로 간다
+
+---
+
+## 2️⃣4️⃣ 네가 절대 잊지 않았으면 하는 것
+- setter는 무조건 쓰는 게 아니다
+- Entity는 DB 저장용이고, DTO는 요청/응답용이다
+- Repository는 DB 접근 통로다
+- Service는 비즈니스 로직이다
+- Controller는 요청/응답만 담당한다
+- Spring은 Nest처럼 module에 직접 다 등록하는 구조가 아니다
+- `final` + `RequiredArgsConstructor` + Bean 주입은 Spring에서 아주 흔한 패턴이다
+- 비밀번호는 반드시 해싱해서 저장한다
+- 응답에 비밀번호는 절대 넣지 않는다
+
+---
+
+## 2️⃣5️⃣ 새 채팅에서 바로 붙일 수 있는 초압축 버전
+```text
+이 프로젝트는 Spring Boot + MySQL 기반 스터디 매칭 플랫폼이다.
+기본 원칙:
+- 한 번에 한 단계씩
+- 파일은 내가 직접 수정, Codex는 가이드만
+- 실무형 아키텍처 기준으로 설명
+- Controller는 요청/응답만, Service는 로직, Repository는 DB, Entity는 저장 모델, DTO는 입출력 전용
+- Entity는 setter 남발하지 않고 생성자/도메인 메서드 중심
+- 비밀번호는 PasswordEncoder로 해싱해서 저장
+- request DTO에는 validation, response DTO에는 민감정보 제외
+- Java는 camelCase, DB는 snake_case
+- Spring은 Nest처럼 module 등록이 아니라 패키지 스캔 + Bean 주입
+- 지금 단계는 회원가입/로그인/JWT/CRUD를 차근차근 구현하는 중
+- 응답은 간결하고 목록형으로 설명
+- 다음 단계로 넘어가기 전에는 멈춤
+```
+
+---
+
+
+🧸🌈 좋아, 그럼 지금부터는 **Spring + MySQL 기준**으로, 네가 이해하기 쉽게 **구현 순서 + 아키텍처**를 딱 잡아줄게 👉🐯
+
+**0️⃣ 먼저 결론**
+- 이 프로젝트는 **모놀리식 단일 서버**로 가는 게 맞아.
+- Nest처럼 기능마다 `module`로 나누는 감각은 그대로 가져가되, Spring에서는 보통 **패키지(폴더) 단위로 기능을 분리**해.
+- 처음엔 **SSR까지 한 번에 넣지 말고**, `API + DB + 인증`부터 잡는 게 훨씬 쉬워 🐻
+
+**1️⃣ 전체 아키텍처 그림**
+```text
+브라우저/클라이언트
+   ↓
+Controller
+   ↓
+Service
+   ↓
+Repository
+   ↓
+MySQL
+```
+- `Controller` 👉 요청 받기, 응답 돌려주기
+- `Service` 👉 비즈니스 로직 처리
+- `Repository` 👉 DB 접근
+- `Entity` 👉 테이블과 연결되는 객체
+- `DTO` 👉 요청/응답 데이터 형태
+- `Security` 👉 로그인/JWT/권한 처리
+
+**2️⃣ 추천 패키지 구조**
+```text
+com.example.study
+ ├─ auth
+ │   ├─ controller
+ │   ├─ service
+ │   ├─ dto
+ │   └─ security
+ ├─ user
+ │   ├─ controller
+ │   ├─ service
+ │   ├─ dto
+ │   ├─ entity
+ │   └─ repository
+ ├─ study
+ │   ├─ controller
+ │   ├─ service
+ │   ├─ dto
+ │   ├─ entity
+ │   └─ repository
+ ├─ application
+ │   ├─ controller
+ │   ├─ service
+ │   ├─ entity
+ │   └─ repository
+ ├─ common
+ │   ├─ exception
+ │   ├─ response
+ │   └─ config
+ └─ StudyApplication.java
+```
+- 이건 Nest의 `module`을 Spring식으로 옮긴 느낌이야 🐱
+- 기능별로 묶어두면 나중에 커져도 안 헷갈려
+
+**3️⃣ 구현 순서**
+**1️⃣ 프로젝트 공통 뼈대**
+- Spring Boot 실행 확인
+- MySQL 연결
+- `application.yml` 또는 `application.properties` 정리
+- `ValidationPipe` 같은 역할인 `@Valid` + 전역 검증 설정
+- 예외 처리 구조 잡기
+- 응답 포맷 통일하기
+
+**2️⃣ User 도메인**
+- 회원 엔티티 만들기
+- 회원 저장용 Repository 만들기
+- 회원 가입 DTO 만들기
+- 회원 가입 Service 만들기
+- 회원 가입 Controller 만들기
+- 비밀번호 암호화 적용
+
+**3️⃣ Auth 도메인**
+- 로그인 DTO 만들기
+- 로그인 Controller 만들기
+- 로그인 Service 만들기
+- JWT 발급
+- JWT 검증
+- Security 설정 연결
+
+**4️⃣ Study 도메인**
+- 스터디 Entity
+- 생성/조회/수정/삭제
+- 작성자와 연결
+- 공개/비공개 여부 같은 기본 필드 추가
+
+**5️⃣ Application 도메인**
+- 스터디 지원 기능
+- 지원 취소 기능
+- 지원 상태 조회
+- 중복 지원 막기
+
+**6️⃣ 관리자/부가기능**
+- 관리자 권한
+- 회원/스터디 관리
+- 댓글
+- 알림
+
+**7️⃣ 화면이 필요하면 SSR**
+- 처음부터 꼭 넣지 말고
+- 나중에 `Thymeleaf` 같은 걸 붙이거나
+- 프론트 분리로 가도 돼
+
+**4️⃣ 네가 처음 배우는 Spring이면 제일 중요한 원칙**
+- 처음부터 크게 만들지 말기
+- 먼저 **회원가입 + 로그인 + DB 저장**만 되게 만들기
+- 그 다음에 스터디 CRUD 추가하기
+- 그 다음에 지원 기능 넣기
+
+즉, **프로젝트 주제는 크게 가도 되는데 구현은 작게 쪼개서** 가는 게 좋아 🐻‍❄️
+
+**5️⃣ 내가 추천하는 첫 구현 목표**
+- `User` 회원가입
+- `User` 로그인
+- JWT 인증
+- `Study` CRUD 1개
+이 4개만 되면 Spring 기본기는 거의 다 배운 거야 👉
+
+원하면 다음 답변에서 바로  
+**“이 구조를 기준으로 실제 파일명이 어떻게 생겨야 하는지”**  
+`Controller / Service / Entity / DTO / Repository` 파일 목록까지 딱 정리해줄게 🦊🌈
+
+

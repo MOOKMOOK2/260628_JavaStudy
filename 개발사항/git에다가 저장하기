@@ -1,0 +1,154 @@
+4️⃣ 변경사항 저장하기
+git add .
+git commit -m "Initial commit"
+5️⃣ GitHub에 올리기
+git push -u origin main
+6️⃣ 앞으로는 반복
+작업할 때마다 보통 이 순서야.
+git pull
+git add .
+git commit -m "메시지"
+git push
+
+
+------------------------------
+
+
+👑✨ PC방에서 하려면 이렇게 하면 돼 ⭕
+
+0️⃣ 처음 한 번
+- PC방 컴퓨터에 `Git`이랑 `VS Code`가 설치돼 있으면 바로 시작 가능
+- GitHub 저장소를 `clone`해서 내려받기
+- 예:
+```bash
+git clone https://github.com/아이디/260628_JavaStudy.git
+cd 260628_JavaStudy
+code .
+```
+
+1️⃣ 작업 시작할 때
+- 다른 데서 수정한 게 있으면 먼저 최신 내용 받기
+```bash
+git pull
+```
+
+2️⃣ 작업 중
+- 코드 수정
+- 저장
+- 필요하면 실행
+- 끝나면 변경사항 저장
+
+3️⃣ 작업 끝나면
+```bash
+git add .
+git commit -m "오늘 작업 내용"
+git push
+```
+
+4️⃣ 다음에 다른 PC에서 이어서 할 때
+- 다시 `git clone` 할 필요는 없고
+- 이미 받은 폴더가 있으면 들어가서
+```bash
+git pull
+```
+- 그 다음 작업하면 돼
+
+5️⃣ PC방에서 조심할 점
+- GitHub 로그인 상태는 끝나면 꼭 로그아웃
+- 브라우저에 계정 저장 안 남기기
+- 작업 끝나면 폴더를 남겨둘지, 지울지 결정
+- 남의 PC니까 비밀번호나 secret 같은 건 더 조심해야 해 ⭕
+
+6️⃣ 네 프로젝트에서 추가로 중요한 점
+- 지금 `application.properties` 안에 DB 비번이랑 `jwt.secret`이 있어서
+- 다른 PC에서 돌리려면 그 설정도 같이 맞아야 해
+- 즉, PC방에서 “코드만 수정”은 쉬운데
+- “실행까지” 하려면 DB 접속 환경도 있어야 해
+
+7️⃣ 제일 쉬운 운영 방식
+- 집에서 GitHub에 `push`
+- PC방에서 `clone`
+- 작업
+- `push`
+- 집에서 `pull`
+이렇게 반복하면 돼
+
+8️⃣ 한 줄 정리
+- PC방에서는 **GitHub에 올린 저장소를 `clone`해서 작업하고, 끝나면 `commit` + `push`** 하면 돼.
+
+원하면 다음엔 내가  
+`집 PC → PC방 → 다시 집 PC`  
+이 흐름을 하루 작업 순서처럼 예시로 딱 그려줄게.
+
+
+맞아, **DB는 git이 자동으로 따라주는 게 아니야** ⭕
+
+0️⃣ 핵심
+- Git은 **코드 파일**을 동기화하는 도구야.
+- MySQL 안에 들어있는 **데이터베이스 자체**는 자동으로 안 옮겨져.
+- 그래서 PC방에서 하려면 DB도 별도로 준비돼 있어야 해.
+
+1️⃣ 경우를 나누면
+- `코드만 수정`
+  - GitHub에서 clone해서 가능
+- `실행까지 함`
+  - 그 PC에도 MySQL이 있어야 함
+  - DB 이름, 계정, 비밀번호도 맞아야 함
+- `데이터까지 똑같이 쓰고 싶음`
+  - DB를 export/import 해야 함
+
+2️⃣ 지금 네 프로젝트 기준
+- `application.properties`에
+  - `spring.datasource.url`
+  - `username`
+  - `password`
+  가 들어있지?
+- 이건 **그 PC에서 접속할 DB 정보**야.
+- 즉, PC방에서도 같은 설정이 있어야 앱이 떠.
+
+3️⃣ 보통 선택지는 3개야
+
+- 1. 집/PC방마다 로컬 MySQL 따로 설치
+  - 각 PC에 MySQL 깔기
+  - 같은 DB 이름 만들기
+  - 필요하면 데이터 import
+  - 초반엔 번거로움
+
+- 2. 같은 원격 DB를 공유
+  - 한 서버에 DB를 두고
+  - 집/PC방에서 모두 그 DB에 접속
+  - 가장 편하지만 인터넷이 필요해
+
+- 3. SQL 파일로 옮기기
+  - 집에서 DB를 덤프 떠서
+  - PC방에서 import
+  - 예:
+    ```bash
+    mysqldump -u root -p user_info > user_info.sql
+    ```
+    ```bash
+    mysql -u root -p user_info < user_info.sql
+    ```
+
+4️⃣ 네가 알아야 할 포인트
+- GitHub에는 **코드**
+- DB는 **별도**
+- `application.properties`는 **DB 접속 정보**
+- 실제 데이터는 **MySQL 안에 따로 있음**
+
+5️⃣ PC방에서 제일 현실적인 방법
+- 코드만 이어서 작업할 거면
+  - GitHub에서 clone
+  - 코드 수정
+- 실행까지 하고 싶으면
+  - 그 PC에도 MySQL 준비
+  - 같은 DB 정보 맞추기
+- 데이터까지 필요하면
+  - DB export/import 하기
+
+6️⃣ 한 줄로 정리
+- **git은 DB를 동기화하지 않고, DB는 따로 옮기거나 같은 DB를 공유해야 해.**
+
+원하면 다음엔 내가  
+`집 PC에서 PC방 PC로 옮길 때 필요한 것 체크리스트`  
+형태로 딱 적어줄게.
